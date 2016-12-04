@@ -1,9 +1,16 @@
 package eec421.csuohio.edu.loginapp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.view.View;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -25,7 +32,9 @@ import java.net.URLEncoder;
 public class BackgroundLoginTask extends AsyncTask<String, Void, String>{
     String register_url = "http://172.20.119.161/loginapp/register.php";
     Context ctx;
+    ProgressDialog progressDialog;
     Activity activity;
+    AlertDialog.Builder builder;
     public BackgroundLoginTask(Context ctx){
         this.ctx = ctx;
         activity = (Activity)ctx;
@@ -33,7 +42,13 @@ public class BackgroundLoginTask extends AsyncTask<String, Void, String>{
 
     @Override
     protected void onPreExecute() {
-        super.onPreExecute();
+        builder = new AlertDialog.Builder(ctx);
+        progressDialog = new ProgressDialog(ctx);
+        progressDialog.setTitle("Please wait");
+        progressDialog.setMessage("Connecting to server...");
+        progressDialog.setIndeterminate(true);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
     }
 
     @Override
@@ -67,11 +82,14 @@ public class BackgroundLoginTask extends AsyncTask<String, Void, String>{
                 while ((line=bufferedReader.readLine())!=null){
                     stringBuilder.append(line+"\n");
                 }
-
+                httpURLConnection.disconnect();
+                Thread.sleep(5000);
                 return stringBuilder.toString().trim();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -85,7 +103,41 @@ public class BackgroundLoginTask extends AsyncTask<String, Void, String>{
     }
 
     @Override
-    protected void onPostExecute(String aVoid) {
-        super.onPostExecute(aVoid);
+    protected void onPostExecute(String json) {
+
+        try {
+            progressDialog.dismiss();
+            JSONObject jsonObject = new JSONObject(json);
+            JSONArray jsonArray = jsonObject.getJSONArray("server_response");
+            JSONObject JO = jsonArray.getJSONObject(0);
+            String code = JO.getString("code");
+            String message = JO.getString("message");
+            if (code.equals("reg_true")){
+                showDialog("Registration Success", message, code);
+            }
+            else if (code.equals("reg_false")){
+                showDialog("Registration Failed", message, code);
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void showDialog(String title, String message, String code){
+        builder.setTitle(title);
+        if(code.equals("reg_true")||code.equals("reg_false")){
+            builder.setMessage(message);
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    activity.finish();
+                }
+            });
+
+            AlertDialog alertDialog = builder.create();
+            alertDialog.show();
+        }
     }
 }
