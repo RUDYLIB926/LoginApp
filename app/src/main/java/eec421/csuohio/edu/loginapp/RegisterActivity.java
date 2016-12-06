@@ -38,7 +38,7 @@ public class RegisterActivity extends AppCompatActivity {
                     AlertDialog alertDialog = builder.create();
                     alertDialog.show();
                 }
-                else if(Pass.getText().toString().equals(ConPass.getText().toString())){
+                else if(!(Pass.getText().toString().equals(ConPass.getText().toString()))){
                     builder = new AlertDialog.Builder(RegisterActivity.this);
                     builder.setTitle("Something went wrong...");
                     builder.setMessage("Passwords don't match");
